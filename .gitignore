@@ -1,0 +1,46 @@
+# Unity generated folders
+/Library/
+/Temp/
+/Obj/
+/Build/
+/Builds/
+/Logs/
+/UserSettings/
+/MemoryCaptures/
+/Recordings/
+
+# Visual Studio / Rider generated
+.vs/
+.idea/
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Unity crash logs
+sysinfo.txt
+*.stackdump
+
+# Builds
+*.apk
+*.aab
+*.unitypackage
+*.app
+
+# Paid Asset Store package: FMETP STREAM 4 — do not redistribute (EULA)
+/Assets/FMETP_STREAM/
+
+# Relay server
+/RelayServer/node_modules/
+
+# Claude Code local settings
+.claude/settings.local.json

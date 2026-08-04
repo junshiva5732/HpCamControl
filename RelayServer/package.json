@@ -1,0 +1,13 @@
+{
+  "name": "hpcamcontrol-relay-server",
+  "version": "1.0.0",
+  "description": "FMETP STREAM 4 WebSocket relay server for HpCamControl (Android <-> Android camera streaming over the internet)",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "ws": "^8.17.0"
+  }
+}
