@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.hpcamcontrol.backgroundstream">
+
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+
+    <!-- Self-managed Telecom call: this is what lets the incoming-call UI launch
+         even while the screen is already on and unlocked, which a plain FCM
+         background service is not allowed to do. -->
+    <uses-permission android:name="android.permission.MANAGE_OWN_CALLS" />
+
+    <application>
+        <service android:name="com.hpcamcontrol.StreamForegroundService"
+                 android:foregroundServiceType="camera"
+                 android:exported="false" />
+
+        <service android:name="com.hpcamcontrol.HpCamConnectionService"
+                 android:permission="android.permission.BIND_TELECOM_CONNECTION_SERVICE"
+                 android:exported="true">
+            <intent-filter>
+                <action android:name="android.telecom.ConnectionService" />
+            </intent-filter>
+        </service>
+    </application>
+</manifest>

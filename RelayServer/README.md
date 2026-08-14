@@ -59,6 +59,14 @@ pm2 startup   # 출력되는 명령어를 그대로 한 번 더 실행하면 재
 - 옵션 A: 3000번 포트를 인바운드로 열어야 함
 - 옵션 B: 80(인증서 발급용), 443번 포트를 인바운드로 열어야 함
 
+## 5.5 앱 종료 상태에서 깨우기 (FCM push-to-wake, 선택 기능)
+
+앱이 완전히 종료된 상태에서도 상대방이 방에 들어오면 자동으로 깨워서 실행시키는 기능입니다. 이 기능을 쓰려면:
+
+1. `RelayServer/secrets/firebase-adminsdk.json` 파일을 서버에 직접 배치해야 합니다 (Firebase 콘솔 → 프로젝트 설정 → 서비스 계정 → 새 비공개 키 생성으로 발급). **이 파일은 git에 안 올라갑니다** (`.gitignore`에 `/RelayServer/secrets/` 포함, Firebase 프로젝트 전체 권한을 가진 비밀키라서 절대 커밋하면 안 됨) — `scp`나 직접 업로드로 서버에 옮겨야 합니다.
+2. `npm install` (firebase-admin 포함, 이미 `package.json`에 추가되어 있음)
+3. 이 파일이 없어도 서버는 정상 동작합니다 — 그냥 push-to-wake 기능만 비활성화됩니다 (콘솔에 `-- Firebase Admin not initialized` 로그가 뜸).
+
 ## 6. 접속 테스트 (브라우저)
 
 `public/index.html`은 FMETP STREAM 패키지에 포함된 간단한 웹 테스트 클라이언트입니다. `http://<서버>:3000` 또는 `https://your-domain.com`으로 접속해서 Room 접속이 되는지 먼저 브라우저로 확인해볼 수 있습니다.

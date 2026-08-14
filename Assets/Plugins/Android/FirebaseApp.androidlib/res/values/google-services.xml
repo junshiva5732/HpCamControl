@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:keep="@string/gcm_defaultSenderId,@string/google_storage_bucket,@string/project_id,@string/google_api_key,@string/google_crash_reporting_api_key,@string/google_app_id">
+  <string name="gcm_defaultSenderId" translatable="false">516618425257</string>
+  <string name="google_storage_bucket" translatable="false">sharecamera-d9e5a.firebasestorage.app</string>
+  <string name="project_id" translatable="false">sharecamera-d9e5a</string>
+  <string name="google_api_key" translatable="false">AIzaSyCPlmHqYMsnWolpquTDgrzeHzB3eOef8L8</string>
+  <string name="google_crash_reporting_api_key" translatable="false">AIzaSyCPlmHqYMsnWolpquTDgrzeHzB3eOef8L8</string>
+  <string name="google_app_id" translatable="false">1:516618425257:android:7bf7568df03c83425b2ab8</string>
+</resources>

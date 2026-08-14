@@ -1,5 +1,9 @@
 const clients = new Map();
 const rooms = new Map();
+// roomName -> Map<deviceId, fcmToken>. Persists across reconnects/app-restarts (unlike
+// wsid, which is random per-connection) so a device can be woken via push even after
+// its socket has long since closed. Populated by the 'registerPush' message.
+const pushRegistry = new Map();
 function uuidv4()
 {
   function s4() { return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1); }
@@ -7,7 +11,7 @@ function uuidv4()
 }
 function ByteToInt32(_byte, _offset) { return (_byte[_offset] & 255) + ((_byte[_offset + 1] & 255) << 8) + ((_byte[_offset + 2] & 255) << 16) + ((_byte[_offset + 3] & 255) << 24); }
 function ByteToInt16(_byte, _offset) { return (_byte[_offset] & 255) + ((_byte[_offset + 1] & 255) << 8); }
-function initializeWebSocketHandling(ws)
+function initializeWebSocketHandling(ws, firebaseMessaging)
 {
     console.log("++ initialize WebSocket Handling...")
     ws.on('connection', function connection(ws)
@@ -15,12 +19,35 @@ function initializeWebSocketHandling(ws)
         const wsid = uuidv4();
         const networkType = 'undefined';
         const roomName = 'Lobby';
-        const metadata = { ws, wsid, networkType, roomName };
+        const metadata = { ws, wsid, networkType, roomName, deviceId: '' };
 
         const roomClients = new Map();
         const roomMasterWSID = '';
         const roomInfo = { roomName, roomClients, roomMasterWSID };
-        function JoinOrCreateRoom(_inRoomName, _inID)
+
+        function wakeOtherRegisteredDevices(_inRoomName, _inMyDeviceId)
+        {
+            if (!firebaseMessaging) return;
+            if (!pushRegistry.has(_inRoomName)) return;
+
+            pushRegistry.get(_inRoomName).forEach((token, deviceId) =>
+            {
+                if (deviceId === _inMyDeviceId) return;
+                firebaseMessaging.send({
+                    token: token,
+                    data: { type: "wake", roomName: _inRoomName },
+                    android: { priority: "high" }
+                }).then(() =>
+                {
+                    console.log("++ PUSH sent to deviceId: " + deviceId + " for room [" + _inRoomName + "]");
+                }).catch((err) =>
+                {
+                    console.log("-- PUSH failed for deviceId: " + deviceId + " | code=" + err.code + " | message=" + err.message + " | token(len=" + token.length + ")=" + JSON.stringify(token));
+                });
+            });
+        }
+
+        function JoinOrCreateRoom(_inRoomName, _inID, _inDeviceId)
         {
           if (!rooms.has(_inRoomName))
           {
@@ -37,6 +64,8 @@ function initializeWebSocketHandling(ws)
               if(rooms.get(_inRoomName).roomClients.size === 1)
               {
                 SetRoomMasterWSID(_inRoomName, wsid);
+                //alone in the room - wake up any other registered devices for this room
+                wakeOtherRegisteredDevices(_inRoomName, _inDeviceId);
               }
               else if(rooms.get(_inRoomName).roomClients.size > 1)
               {
@@ -128,17 +157,26 @@ function initializeWebSocketHandling(ws)
                         }
                         else
                         {
+    // Notify every remaining member that this client left, regardless of
+                            // whether it was the room master. The peer's app can disappear any
+                            // number of ways (swipe-close, crash, force-stop, network loss) that
+                            // never give it a chance to send an explicit goodbye message, so this
+                            // server-detected TCP-close is the only signal that's reliable in all
+                            // of those cases.
+                            var _remainingClients = rooms.get(_roomName).roomClients.values();
+                            for (var ci = 0; ci < rooms.get(_roomName).roomClients.size; ci++)
+                            {
+                                var remainingClient = _remainingClients.next().value;
+                                try { remainingClient.ws.send(FMEventEncode("OnClientDisconnectedEvent", wsid)); } catch {}
+                            }
+                            console.log("** Sent OnClientDisconnectedEvent to remaining ROOM [" + _roomName + "] clients | disconnected client wsid: " + wsid);
+
                             if(rooms.get(_roomName).roomMasterWSID === wsid)
                             {
                                 //assign a new room master...
                                 var _roomInfo_clients = rooms.get(_roomName).roomClients.values();
                                 var roomLocalClient = _roomInfo_clients.next().value;
                                 SetRoomMasterWSID(_roomName, roomLocalClient.wsid);
-                            }
-                            else
-                            {
-                                console.log("** Sent OnClientDisconnectedEvent to roomMasterWSID: " + rooms.get(_roomName).roomMasterWSID + " | disconnected client wsid: " + wsid);
-                                try { rooms.get(_roomName).roomClients.get(rooms.get(_roomName).roomMasterWSID).ws.send(FMEventEncode("OnClientDisconnectedEvent", wsid)); } catch {}
                             }
                         }
                     }
@@ -162,7 +200,10 @@ function initializeWebSocketHandling(ws)
                 {
                     var decodedResult = FMEventDecode(message);
                     var decodedType = decodedResult[1];
-                    var decodedValue = decodedResult[2];
+                    // FCM tokens contain a ':' themselves (e.g. "abc123:APA91b..."), so a plain
+                    // decodedResult[2] silently truncates at that inner colon. Rejoin everything
+                    // after the type so values containing ':' survive intact.
+                    var decodedValue = decodedResult.slice(2).join(':');
                     if (decodedType !== 'ping' && decodedType !== 'lping') console.log("-> Message [" + message + "]");//ignore ping message...
 
                     switch(decodedType)
@@ -181,8 +222,49 @@ function initializeWebSocketHandling(ws)
                           console.log("regRoom(waiting request): " + wsid + " networkType: " + clients.get(wsid).networkType + " | roomName: " + clients.get(wsid).roomName);
                           break;
                       case 'roomName':
-                          clients.get(wsid).roomName = decodedValue;
-                          JoinOrCreateRoom(clients.get(wsid).roomName, clients.get(wsid).wsid);
+                          {
+                              // value format: "roomName" or "roomName,deviceId"
+                              var _roomParts = decodedValue.split(',');
+                              clients.get(wsid).roomName = _roomParts[0];
+                              if (_roomParts.length > 1) clients.get(wsid).deviceId = _roomParts[1];
+                              JoinOrCreateRoom(clients.get(wsid).roomName, clients.get(wsid).wsid, clients.get(wsid).deviceId);
+                          }
+                          break;
+                      case 'registerPush':
+                          {
+                              // value format: "roomName,deviceId,fcmToken"
+                              var _pushParts = decodedValue.split(',');
+                              if (_pushParts.length >= 3)
+                              {
+                                  var _pushRoomName = _pushParts[0];
+                                  var _pushDeviceId = _pushParts[1];
+                                  var _pushToken = _pushParts.slice(2).join(','); // token itself may contain characters, but not ':' (fmevent separator); commas are not expected either, this is defensive
+                                  if (!pushRegistry.has(_pushRoomName)) pushRegistry.set(_pushRoomName, new Map());
+                                  pushRegistry.get(_pushRoomName).set(_pushDeviceId, _pushToken);
+                                  console.log("++ registerPush room [" + _pushRoomName + "] deviceId [" + _pushDeviceId + "]");
+                              }
+                          }
+                          break;
+                      case 'unregisterPush':
+                          {
+                              // value format: "roomName,deviceId" - lets a device that no
+                              // longer wants to participate (see CamStart.OnClickLeaveRoomPermanently)
+                              // remove itself from the wake-push list. Without this, pushRegistry
+                              // keeps sending it wake pushes forever (it's keyed by deviceId, not
+                              // tied to the current connection, so it otherwise only clears on
+                              // server restart).
+                              var _unregParts = decodedValue.split(',');
+                              if (_unregParts.length >= 2)
+                              {
+                                  var _unregRoomName = _unregParts[0];
+                                  var _unregDeviceId = _unregParts[1];
+                                  if (pushRegistry.has(_unregRoomName))
+                                  {
+                                      pushRegistry.get(_unregRoomName).delete(_unregDeviceId);
+                                      console.log("-- unregisterPush room [" + _unregRoomName + "] deviceId [" + _unregDeviceId + "]");
+                                  }
+                              }
+                          }
                           break;
                       case 'requestRoomMaster':
                           var myRoomName = clients.get(wsid).roomName;
@@ -244,6 +326,7 @@ function initializeWebSocketHandling(ws)
 module.exports = {
   clients,
   rooms,
+  pushRegistry,
   uuidv4,
   ByteToInt32,
   ByteToInt16,

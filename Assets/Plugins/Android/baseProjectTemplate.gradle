@@ -1,0 +1,42 @@
+plugins {
+    // If you are changing the Android Gradle Plugin version, make sure it is compatible with the Gradle version preinstalled with Unity
+    // See which Gradle version is preinstalled with Unity here https://docs.unity3d.com/Manual/android-gradle-overview.html
+    // See official Gradle and Android Gradle Plugin compatibility table here https://developer.android.com/studio/releases/gradle-plugin#updating-gradle
+    // To specify a custom Gradle version in Unity, go do "Preferences > External Tools", uncheck "Gradle Installed with Unity (recommended)" and specify a path to a custom Gradle version
+    id 'com.android.application' version '7.4.2' apply false
+    id 'com.android.library' version '7.4.2' apply false
+    **BUILD_SCRIPT_DEPS**
+}
+
+// Force an old-enough Kotlin/coroutines version project-wide (root scope, applies before
+// any subproject resolves its classpath) so Unity's bundled D8 (AGP 7.4.2 era) doesn't hit
+// a StackOverflowError parsing newer Kotlin metadata pulled in transitively by Firebase.
+allprojects {
+    configurations.all {
+        // firebase-analytics pulls this in transitively; we don't use Analytics for the
+        // FCM wake-up feature, and its .aar's own compiled classes trip the same D8
+        // StackOverflowError even after pinning kotlin-stdlib/coroutines above.
+        exclude group: 'com.google.android.gms', module: 'play-services-measurement-api'
+        exclude group: 'com.google.android.gms', module: 'play-services-measurement'
+        exclude group: 'com.google.android.gms', module: 'play-services-measurement-sdk'
+        exclude group: 'com.google.firebase', module: 'firebase-analytics'
+        resolutionStrategy {
+            // plain force silently loses to Kotlin's module-metadata version alignment,
+            // so use eachDependency/useVersion instead - it wins even against that.
+            eachDependency { details ->
+                if (details.requested.group == 'org.jetbrains.kotlin' && details.requested.name.startsWith('kotlin-stdlib')) {
+                    details.useVersion '1.7.20'
+                    details.because 'pin for old (AGP 7.4.2) D8 compatibility'
+                }
+                if (details.requested.group == 'org.jetbrains.kotlinx' && details.requested.name.startsWith('kotlinx-coroutines')) {
+                    details.useVersion '1.6.4'
+                    details.because 'pin for old (AGP 7.4.2) D8 compatibility'
+                }
+            }
+        }
+    }
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}

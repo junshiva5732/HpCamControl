@@ -1,0 +1,47 @@
+pluginManagement {
+    repositories {
+        **ARTIFACTORYREPOSITORY**
+        gradlePluginPortal()
+        google()
+        mavenCentral()
+    }
+}
+
+include ':launcher', ':unityLibrary'
+**INCLUDES**
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+    repositories {
+        **ARTIFACTORYREPOSITORY**
+        google()
+        mavenCentral()
+// Android Resolver Repos Start
+        def unityProjectPath = $/file:///**DIR_UNITYPROJECT**/$.replace("\\", "/")
+        maven {
+            url (unityProjectPath + "/Assets/GeneratedLocalRepo/Firebase/m2repository") // Assets/Firebase/Editor/AppDependencies.xml:26, Assets/Firebase/Editor/MessagingDependencies.xml:28
+        }
+        mavenLocal()
+// Android Resolver Repos End
+        flatDir {
+            dirs "${project(':unityLibrary').projectDir}/libs"
+        }
+    }
+}
+
+// ==============================================================================
+// [추가] D8 Dexing / Kotlin 2.0+ StackOverflowError 방지 프로젝트 전역 버전 강제 고정
+// ==============================================================================
+gradle.beforeProject { proj ->
+    proj.configurations.all {
+        resolutionStrategy {
+            force 'org.jetbrains.kotlin:kotlin-stdlib:1.9.22'
+            force 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.22'
+            force 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.22'
+            force 'org.jetbrains.kotlin:kotlin-stdlib-common:1.9.22'
+            force 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0'
+            force 'org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.8.0'
+            force 'org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.0'
+        }
+    }
+}

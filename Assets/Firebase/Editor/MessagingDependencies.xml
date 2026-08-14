@@ -1,0 +1,30 @@
+<!-- Copyright (C) 2019 Google Inc. All Rights Reserved.
+
+FirebaseMessaging iOS and Android Dependencies.
+-->
+
+<dependencies>
+    <remoteSwiftPackage url="https://github.com/firebase/firebase-ios-sdk.git" version="12.17.0">
+        <swiftPackage name="FirebaseMessaging" replacesPod="Firebase/Messaging"/>
+    </remoteSwiftPackage>
+    <iosPods>
+        <iosPod name="Firebase/Messaging" version="12.17.0" minTargetSdk="15.0">
+        </iosPod>
+    </iosPods>
+    <androidPackages>
+        <!-- Unity 2021 AGP 7.4.2 및 D8 컴파일러 호환 버전으로 조정 -->
+        <androidPackage spec="com.google.firebase:firebase-messaging:23.4.1">
+        </androidPackage>
+        <androidPackage spec="com.google.firebase:firebase-analytics:21.5.1">
+        </androidPackage>
+        <androidPackage spec="com.google.firebase:firebase-iid:21.1.0">
+        </androidPackage>
+        <androidPackage spec="com.google.flatbuffers:flatbuffers-java:1.12.0">
+        </androidPackage>
+        <androidPackage spec="com.google.firebase:firebase-messaging-unity:13.15.0">
+            <repositories>
+                <repository>Assets/Firebase/m2repository</repository>
+            </repositories>
+        </androidPackage>
+    </androidPackages>
+</dependencies>

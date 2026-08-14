@@ -4,5 +4,8 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Scenes/Demo_FMWebSocketStreaming.unity
+    guid: 65d3238e9a1844f13b34601965237e2c
   m_configObjects: {}

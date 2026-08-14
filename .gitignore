@@ -41,6 +41,14 @@ sysinfo.txt
 
 # Relay server
 /RelayServer/node_modules/
+/RelayServer/secrets/
+
+# Firebase desktop-editor/iOS/tvOS binaries - this project only ships Android;
+# these are large (>50MB, one exceeds GitHub's 100MB hard limit) and Firebase's
+# External Dependency Manager regenerates them on import anyway.
+/Assets/Firebase/Plugins/x86_64/
+/Assets/Plugins/iOS/
+/Assets/Plugins/tvOS/
 
 # Claude Code local settings
 .claude/settings.local.json

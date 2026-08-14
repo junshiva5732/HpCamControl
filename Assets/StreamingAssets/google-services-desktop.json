@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "516618425257",
+    "project_id": "sharecamera-d9e5a",
+    "storage_bucket": "sharecamera-d9e5a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:516618425257:android:7bf7568df03c83425b2ab8",
+        "android_client_info": {
+          "package_name": "com.JgHoldings.HpCamControl"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCPlmHqYMsnWolpquTDgrzeHzB3eOef8L8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
